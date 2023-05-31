@@ -1,0 +1,82 @@
+[gd_scene load_steps=14 format=3 uid="uid://crckqbi7vprv4"]
+
+[ext_resource type="Script" path="res://InputTest.gd" id="1_aedyb"]
+[ext_resource type="Script" path="res://Skater.gd" id="2_u5oce"]
+[ext_resource type="Shader" path="res://Grid.gdshader" id="3_f53of"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jrrpi"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kfme0"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_r7677"]
+size = Vector3(0.3, 0.2, 0.5)
+
+[sub_resource type="SphereMesh" id="SphereMesh_ld7d4"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_b5r6n"]
+render_priority = 0
+shader = ExtResource("3_f53of")
+shader_parameter/density = 1000.0
+shader_parameter/line_color = Color(0.337255, 0.368627, 0.403922, 1)
+shader_parameter/plane_color = Color(0.243137, 0.262745, 0.282353, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_c1v5e"]
+size = Vector2(1000, 1000)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jbnjb"]
+size = Vector3(1000, 0, 1000)
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ynuta"]
+
+[sub_resource type="Sky" id="Sky_p2guf"]
+sky_material = SubResource("ProceduralSkyMaterial_ynuta")
+
+[sub_resource type="Environment" id="Environment_4debr"]
+background_mode = 2
+sky = SubResource("Sky_p2guf")
+
+[node name="Node3D" type="Node3D"]
+script = ExtResource("1_aedyb")
+
+[node name="Skater" type="CharacterBody3D" parent="."]
+script = ExtResource("2_u5oce")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Skater"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_jrrpi")
+
+[node name="LeftFoot" type="MeshInstance3D" parent="Skater"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.1, 0)
+material_override = SubResource("StandardMaterial3D_kfme0")
+mesh = SubResource("BoxMesh_r7677")
+
+[node name="RightFoot" type="MeshInstance3D" parent="Skater"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.1, 0)
+material_override = SubResource("StandardMaterial3D_kfme0")
+mesh = SubResource("BoxMesh_r7677")
+
+[node name="Camera3D" type="Camera3D" parent="Skater"]
+transform = Transform3D(1, -6.59773e-08, 1.60303e-07, -2.26267e-08, 0.867149, 0.498049, -1.71867e-07, -0.498049, 0.867149, 2.38419e-07, 3.87606, 4.30006)
+current = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Skater"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.73905, 0)
+material_override = SubResource("StandardMaterial3D_kfme0")
+mesh = SubResource("SphereMesh_ld7d4")
+
+[node name="Plane" type="MeshInstance3D" parent="."]
+material_override = SubResource("ShaderMaterial_b5r6n")
+mesh = SubResource("PlaneMesh_c1v5e")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Plane"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Plane/StaticBody3D"]
+shape = SubResource("BoxShape3D_jbnjb")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_4debr")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.965926, -0.0669873, 0.25, -0.258819, -0.25, 0.933013, 0, -0.965926, -0.258819, 0, 4, 0)
+shadow_enabled = true
+shadow_blur = 3.762
