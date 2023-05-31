@@ -1,44 +1,6 @@
 extends CharacterBody3D
 class_name Skater
 
-class Skate:
-	var default_pos : Vector3
-	var skate_object : Node3D
-	var angle : float = 0 
-	const rotate_angle : float = PI/4
-	var raised = false
-	var pressed = false
-	
-	func _init(skate_object : Node3D):
-		self.default_pos = skate_object.position
-		self.skate_object = skate_object
-		self.angle = 0
-	
-	## Returns the resisted direction
-	func move(offset : Vector3) -> Vector3:
-		var original_position = skate_object.position
-		skate_object.position.x = default_pos.x + offset.x
-		skate_object.position.z = default_pos.z + offset.z
-		var change = skate_object.position - original_position
-		return change
-	
-	func raise(amount):
-		skate_object.position.y += amount
-		raised = true
-	
-	func lower(amount):
-		skate_object.position.y -= amount
-		raised = false
-	
-	func rotate(amount):
-		self.angle += amount
-		skate_object.rotation.y = self.angle
-	
-	func press():
-		pressed = true
-	
-	func unpress():
-		pressed = false
 
 
 var left_skate : Skate
@@ -47,6 +9,7 @@ var right_skate : Skate
 
 enum DIRECTIONS{LEFT_HOR, LEFT_VER, RIGHT_HOR, RIGHT_VER}
 
+# Desired push with joypad axis directions as keys
 var desired_push = {
 	DIRECTIONS.LEFT_HOR:0.0,
 	DIRECTIONS.LEFT_VER:0.0,
@@ -54,13 +17,22 @@ var desired_push = {
 	DIRECTIONS.RIGHT_VER:0.0,
 }
 
+## Button map for raising axis of each skate, initialized in _ready()
 var raise_axis = {}
+## Button map for pushing down axis of each skate, initialized in _ready()
 var press_stick = {}
+## Button map for rotating axis of each skate, initialized in _ready()
+var rotate_button = {}
+## Angle for rotation of each skate, initialized in _ready()
+var rotate_angle = {}
+## Default position for each skate
+var default_position
+
 
 ## Initializes each skate to get starting value from physical objects
 func _ready():
-	right_skate = Skate.new($RightFoot)
-	left_skate = Skate.new($LeftFoot)
+	right_skate = $"../RightSkate"
+	left_skate = $"../LeftSkate"
 	raise_axis = {
 			JOY_AXIS_TRIGGER_LEFT : left_skate,
 			JOY_AXIS_TRIGGER_RIGHT : right_skate,
@@ -69,10 +41,23 @@ func _ready():
 		JOY_BUTTON_LEFT_STICK : left_skate,
 		JOY_BUTTON_RIGHT_STICK : right_skate,
 	}
+	rotate_button = {
+		JOY_BUTTON_LEFT_SHOULDER : left_skate,
+		JOY_BUTTON_RIGHT_SHOULDER : right_skate,
+	}
+	rotate_angle = {
+		left_skate : PI/4,
+		right_skate : -PI/4
+	}
+	default_position = {
+		left_skate : left_skate.position,
+		right_skate : right_skate.position
+	}
+	
 
 @export var mass : float = 10.0
 @export var max_push_force : float = 10.0
-
+@export_range(0,100) var push_strength : float = 10.0
 func _physics_process(delta):
 	
 	# Create and clamp desired left position vector
@@ -82,31 +67,46 @@ func _physics_process(delta):
 	# Create and clamp desired right position vector
 	var desired_right_position = Vector3(desired_push[DIRECTIONS.RIGHT_HOR],0,desired_push[DIRECTIONS.RIGHT_VER])
 	desired_right_position = clamp_magnitude(desired_right_position, 1.0)
+#
+#	left_skate.position.x = desired_left_position.x + left_skate.starting_position.x
+#	left_skate.position.z = desired_left_position.z + left_skate.starting_position.z
+#	right_skate.position.x = desired_right_position.x + right_skate.starting_position.x
+#	right_skate.position.z = desired_right_position.z + right_skate.starting_position.z
 
 
+	var left_skate_force = left_skate.push_towards(desired_left_position, push_strength)
+	var right_skate_force = right_skate.push_towards(desired_right_position, push_strength)
 
-	var left_return_force = left_skate.move(desired_left_position)
-	var right_return_force = right_skate.move(desired_right_position)
+	var total_force = left_skate_force + right_skate_force + Vector3.DOWN*10
+	var acceleration = total_force/mass
+	
+	velocity += acceleration*delta
+	move_and_slide()
 
-	velocity += (left_return_force + right_return_force)/mass
+	for skate in [left_skate, right_skate]:
+		skate.default_position = default_position[skate]
+	clamp_skate_positions()
+
+## Prevent skates from leaving range
+func clamp_skate_positions():
+	for object in [left_skate, right_skate]:
+		var skate : Skate = object as Skate
+		var skate_offset = skate.position - (default_position[skate]+self.position)
+		skate.position = clamp_magnitude(skate_offset,1.) + default_position[skate]
 
 
 func _input(event):
 	# Rotating the skates with bumpers
 	if event is InputEventJoypadButton:
-		var rotate_button = {
-			9 : left_skate,
-			10 : right_skate
-		}
-		var rotate_angle = {
-			left_skate : PI/4,
-			right_skate : -PI/4
-		}
 		if event.button_index in rotate_button.keys():
 			var skate : Skate = rotate_button[event.button_index]
 			var angle : float = rotate_angle[skate]
-			skate.rotate(angle) if event.pressed else skate.rotate(-angle)
 			return
+		
+		if event.button_index in press_stick.keys():
+			var skate : Skate = press_stick[event.button_index]
+			skate.press() if event.pressed else skate.unpress()
+		
 
 	# Getting desired push direction
 	if event is InputEventJoypadMotion:
@@ -118,8 +118,7 @@ func _input(event):
 
 		elif (event as InputEventJoypadMotion).axis in raise_axis.keys():
 			var skate : Skate = raise_axis[event.axis]
-			skate.lower(.2) if event.axis_value < 0.5 else skate.raise(.2)
-			print(event.axis_value)
+			skate.lower() if event.axis_value < 0.5 else skate.raise()
 
 
 

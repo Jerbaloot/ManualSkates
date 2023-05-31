@@ -1,17 +1,23 @@
-[gd_scene load_steps=14 format=3 uid="uid://crckqbi7vprv4"]
+[gd_scene load_steps=16 format=3 uid="uid://crckqbi7vprv4"]
 
 [ext_resource type="Script" path="res://InputTest.gd" id="1_aedyb"]
 [ext_resource type="Script" path="res://Skater.gd" id="2_u5oce"]
 [ext_resource type="Shader" path="res://Grid.gdshader" id="3_f53of"]
+[ext_resource type="Script" path="res://Skate.gd" id="4_ajsyi"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jrrpi"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kfme0"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_r7677"]
-size = Vector3(0.3, 0.2, 0.5)
-
 [sub_resource type="SphereMesh" id="SphereMesh_ld7d4"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_2nb0v"]
+radius = 0.1
+height = 0.5
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1euo6"]
+radius = 0.1
+height = 0.5
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_b5r6n"]
 render_priority = 0
@@ -39,30 +45,46 @@ sky = SubResource("Sky_p2guf")
 script = ExtResource("1_aedyb")
 
 [node name="Skater" type="CharacterBody3D" parent="."]
+collision_layer = 0
 script = ExtResource("2_u5oce")
+push_strength = 33.423
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Skater"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CapsuleShape3D_jrrpi")
 
-[node name="LeftFoot" type="MeshInstance3D" parent="Skater"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.1, 0)
-material_override = SubResource("StandardMaterial3D_kfme0")
-mesh = SubResource("BoxMesh_r7677")
-
-[node name="RightFoot" type="MeshInstance3D" parent="Skater"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.1, 0)
-material_override = SubResource("StandardMaterial3D_kfme0")
-mesh = SubResource("BoxMesh_r7677")
-
-[node name="Camera3D" type="Camera3D" parent="Skater"]
-transform = Transform3D(1, -6.59773e-08, 1.60303e-07, -2.26267e-08, 0.867149, 0.498049, -1.71867e-07, -0.498049, 0.867149, 2.38419e-07, 3.87606, 4.30006)
-current = true
-
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Skater"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.73905, 0)
 material_override = SubResource("StandardMaterial3D_kfme0")
 mesh = SubResource("SphereMesh_ld7d4")
+
+[node name="Camera3D" type="Camera3D" parent="Skater"]
+transform = Transform3D(1, 0, 0, 0, 0.866897, 0.498488, 0, -0.498488, 0.866897, 0, 3.99553, 3.44844)
+current = true
+
+[node name="RightSkate" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.053, 0, -0.126)
+script = ExtResource("4_ajsyi")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RightSkate"]
+transform = Transform3D(1, 0, 3.55271e-15, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.1, 0)
+shape = SubResource("CapsuleShape3D_2nb0v")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RightSkate"]
+transform = Transform3D(1, 0, 3.55271e-15, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.1, 0)
+mesh = SubResource("CapsuleMesh_1euo6")
+
+[node name="LeftSkate" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.053, 0, -0.126)
+script = ExtResource("4_ajsyi")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LeftSkate"]
+transform = Transform3D(1, 0, 3.55271e-15, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.1, 0)
+shape = SubResource("CapsuleShape3D_2nb0v")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="LeftSkate"]
+transform = Transform3D(1, 0, 3.55271e-15, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0.1, 0)
+mesh = SubResource("CapsuleMesh_1euo6")
 
 [node name="Plane" type="MeshInstance3D" parent="."]
 material_override = SubResource("ShaderMaterial_b5r6n")
