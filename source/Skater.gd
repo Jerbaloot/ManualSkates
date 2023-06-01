@@ -163,8 +163,8 @@ func _physics_process(delta):
 	}
 	
 	var friction = {
-		right_skate:right_skate.get_rolling_friction(skate_velocities[right_skate], facing_directions[right_skate]) + right_skate.get_sliding_friction(global_velocity+skate_velocities[right_skate], facing_directions[right_skate]),
-		left_skate:left_skate.get_rolling_friction(skate_velocities[left_skate], facing_directions[left_skate]) + left_skate.get_sliding_friction(global_velocity+skate_velocities[left_skate], facing_directions[left_skate])
+		right_skate:right_skate.get_sliding_friction(global_velocity+skate_velocities[right_skate], facing_directions[right_skate]),
+		left_skate:left_skate.get_sliding_friction(global_velocity+skate_velocities[left_skate], facing_directions[left_skate])
 	}
 
 	skate_forces = friction
