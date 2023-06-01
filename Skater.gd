@@ -6,8 +6,9 @@ class Skate:
 	var skate_object : Node3D
 	var angle : float = 0 
 	const rotate_angle : float = PI/4
-	var raised = false
+	var raised = true
 	var pressed = false
+	var mass = 40
 	
 	func _init(skate_object : Node3D):
 		self.default_pos = skate_object.position
@@ -20,14 +21,28 @@ class Skate:
 		skate_object.position.x = default_pos.x + offset.x
 		skate_object.position.z = default_pos.z + offset.z
 		var change = skate_object.position - original_position
-		return change
+		var parallel_change = skate_object.transform.basis.z * change.dot(skate_object.transform.basis.z)
+		var perpendicular_change = change - parallel_change
+		return perpendicular_change
 	
-	func raise(amount):
+	func get_rolling_friction(velocity : Vector3, parent_transform : Transform3D):
+		if raised: return Vector3.ZERO
+		var global_basis = skate_object.global_transform.basis
+		var parallel_velocity = skate_object.transform.basis.z * velocity.dot(skate_object.transform.basis.z)
+		return -parallel_velocity.normalized()*parallel_velocity.length_squared()*.1
+	
+	func get_sliding_friction(velocity : Vector3, parent_transform : Transform3D):
+		if raised: return Vector3.ZERO
+		var parallel_velocity = skate_object.transform.basis.z * velocity.dot(skate_object.transform.basis.z)
+		var perpendicular_velocity = velocity-parallel_velocity
+		return -perpendicular_velocity.normalized()*perpendicular_velocity.length_squared()*100
+	
+	func raise(amount = .2):
 		skate_object.position.y += amount
 		raised = true
 	
-	func lower(amount):
-		skate_object.position.y -= amount
+	func lower():
+		skate_object.position.y = 0
 		raised = false
 	
 	func rotate(amount):
@@ -43,6 +58,7 @@ class Skate:
 
 var left_skate : Skate
 var right_skate : Skate
+var skates : Array[Skate] = []
 
 
 enum DIRECTIONS{LEFT_HOR, LEFT_VER, RIGHT_HOR, RIGHT_VER}
@@ -61,6 +77,7 @@ var press_stick = {}
 func _ready():
 	right_skate = Skate.new($RightFoot)
 	left_skate = Skate.new($LeftFoot)
+	skates = [left_skate, right_skate]
 	raise_axis = {
 			JOY_AXIS_TRIGGER_LEFT : left_skate,
 			JOY_AXIS_TRIGGER_RIGHT : right_skate,
@@ -69,13 +86,14 @@ func _ready():
 		JOY_BUTTON_LEFT_STICK : left_skate,
 		JOY_BUTTON_RIGHT_STICK : right_skate,
 	}
+	update_moment()
 
 @export var mass : float = 10.0
+var moment
 @export var max_push_force : float = 10.0
 
-func _physics_process(delta):
-	
-	# Create and clamp desired left position vector
+func move_and_get_offset():
+		# Create and clamp desired left position vector
 	var desired_left_position = Vector3(desired_push[DIRECTIONS.LEFT_HOR],0,desired_push[DIRECTIONS.LEFT_VER])
 	desired_left_position = clamp_magnitude(desired_left_position, 1.0)
 
@@ -84,11 +102,71 @@ func _physics_process(delta):
 	desired_right_position = clamp_magnitude(desired_right_position, 1.0)
 
 
+	return {
+		left_skate:left_skate.move(desired_left_position),
+		right_skate:right_skate.move(desired_right_position)
+	}
 
-	var left_return_force = left_skate.move(desired_left_position)
-	var right_return_force = right_skate.move(desired_right_position)
 
-	velocity += (left_return_force + right_return_force)/mass
+func update_moment():
+	var moment_of_body = 2/5 * mass * 1
+	
+	var left_skate_moment = (left_skate.skate_object.position*Vector3(1,0,1)).length_squared()*left_skate.mass
+	var right_skate_moment = (right_skate.skate_object.position*Vector3(1,0,1)).length_squared()*right_skate.mass
+	
+	moment = moment_of_body + left_skate_moment + right_skate_moment
+
+func _physics_process(delta):
+	var offsets = move_and_get_offset()
+
+	var average_perpendicular_offset : Vector3 = (offsets[left_skate]+offsets[right_skate])/2
+	if not (left_skate.raised and right_skate.raised):
+		if left_skate.raised:
+			average_perpendicular_offset = offsets[right_skate]
+		elif right_skate.raised:
+			average_perpendicular_offset = offsets[left_skate]
+	elif left_skate.raised and right_skate.raised:
+		average_perpendicular_offset = Vector3.ZERO
+
+
+	velocity += -average_perpendicular_offset/delta/2
+	
+	var global_velocity = velocity.rotated(Vector3.UP, rotation.y)
+	global_velocity = velocity
+	
+	var friction = {
+		right_skate:right_skate.get_rolling_friction(global_velocity, self.global_transform) + right_skate.get_sliding_friction(global_velocity, self.global_transform),
+		left_skate:left_skate.get_rolling_friction(global_velocity, self.global_transform) + left_skate.get_sliding_friction(global_velocity, self.global_transform)
+	}
+	
+	skate_forces = friction
+	
+	apply_linear_motion(friction, delta)
+	apply_angular_motion(friction, delta)
+
+## Angular global_velocity of the skater as a float with the direction being upwards
+var angular_velocity = 0
+
+var skate_forces = {}
+
+func apply_angular_motion(friction : Dictionary, delta : float):
+	var torque = Vector3.ZERO
+	
+	for skate in skates:
+		var r = skate.skate_object.position
+		var skate_torque = r.cross(friction[skate])
+		torque -= skate_torque
+
+	var angular_acceleration = torque.dot(Vector3.UP)/moment/100
+	
+	angular_velocity += angular_acceleration*delta
+	rotation.y += angular_acceleration*delta
+
+func apply_linear_motion(friction : Dictionary, delta : float):
+	var drag_forces : Vector3 = (friction[right_skate] as Vector3) + (friction[left_skate] as Vector3)
+	var acceleration : Vector3 = drag_forces/self.mass
+	velocity += acceleration*delta
+	move_and_slide()
 
 
 func _input(event):
@@ -108,18 +186,22 @@ func _input(event):
 			skate.rotate(angle) if event.pressed else skate.rotate(-angle)
 			return
 
+		var press_button = {
+				JOY_BUTTON_LEFT_STICK : left_skate,
+				JOY_BUTTON_RIGHT_STICK : right_skate
+			}
+			
+		if event.button_index in press_button.keys():
+			var skate : Skate = press_button[event.button_index]
+			skate.lower() if event.pressed else skate.raise()
+			return
+
 	# Getting desired push direction
 	if event is InputEventJoypadMotion:
-		
-
 		if (event as InputEventJoypadMotion).axis in desired_push.keys():
 			desired_push[event.axis] = event.axis_value
 			return
 
-		elif (event as InputEventJoypadMotion).axis in raise_axis.keys():
-			var skate : Skate = raise_axis[event.axis]
-			skate.lower(.2) if event.axis_value < 0.5 else skate.raise(.2)
-			print(event.axis_value)
 
 
 

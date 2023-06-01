@@ -14,3 +14,7 @@ config/name="Manual Skates"
 run/main_scene="res://InputTest.tscn"
 config/features=PackedStringArray("4.0", "Forward Plus")
 config/icon="res://icon.svg"
+
+[physics]
+
+common/max_physics_steps_per_frame=20
