@@ -1,0 +1,45 @@
+[gd_scene load_steps=7 format=3 uid="uid://bue4na8ax64kt"]
+
+[ext_resource type="Script" path="res://Point.gd" id="1_512s3"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r6776"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0.352941)
+emission_enabled = true
+emission = Color(0.843137, 0.262745, 1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_nsxgm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oynjv"]
+transparency = 1
+albedo_color = Color(0.184314, 0, 1, 0.847059)
+emission_enabled = true
+emission = Color(0.843137, 0.262745, 1, 1)
+emission_energy_multiplier = 16.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_luj0b"]
+radius = 0.25
+height = 0.5
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_4fo0w"]
+radius = 0.845207
+
+[node name="Point" type="Area3D"]
+script = ExtResource("1_512s3")
+
+[node name="Node3D" type="Node3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Node3D"]
+material_override = SubResource("StandardMaterial3D_r6776")
+mesh = SubResource("SphereMesh_nsxgm")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
+material_override = SubResource("StandardMaterial3D_oynjv")
+mesh = SubResource("SphereMesh_luj0b")
+skeleton = NodePath("../..")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape3D_4fo0w")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

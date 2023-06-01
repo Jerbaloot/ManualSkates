@@ -11,11 +11,15 @@ config_version=5
 [application]
 
 config/name="Manual Skates"
-run/main_scene="res://InputTest.tscn"
+run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.0", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+ScoreKeeper="*res://score_keeper.gd"
+
 [physics]
 
-common/physics_ticks_per_second=200
-common/max_physics_steps_per_frame=20
+common/physics_ticks_per_second=400
+common/max_physics_steps_per_frame=100

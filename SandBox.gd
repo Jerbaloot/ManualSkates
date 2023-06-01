@@ -1,7 +1,5 @@
 extends Node3D
 
-
-
 func _process(delta):
 	var vel_raycast : RayCast3D = $RayCast3D
 	var skater : Skater = $Skater
@@ -30,3 +28,10 @@ func _process(delta):
 		var raycast = facing_raycasts[skate]
 		raycast.position = (skate as Skater.Skate).skate_object.global_position
 		raycast.target_position = facing_direction*10
+
+
+func _on_reset_pressed():
+	$CubeSpawner.respawn()
+	ScoreKeeper.score = 0
+	$Skater.position = Vector3.ZERO
+	$Skater.velocity = Vector3.ZERO

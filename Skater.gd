@@ -32,16 +32,16 @@ class Skate:
 		return perpendicular_change
 	
 	func get_rolling_friction(velocity : Vector3, facing_direction : Vector3):
+		return Vector3.ZERO
 		if raised: return Vector3.ZERO
-		var global_basis = skate_object.global_transform.basis
-		var parallel_velocity = skate_object.transform.basis.z * velocity.dot(skate_object.transform.basis.z)
-		return -parallel_velocity.normalized()*parallel_velocity.length_squared()*.1
+		var parallel_velocity = facing_direction * velocity.dot(facing_direction)
+		return parallel_velocity.normalized()*parallel_velocity.length_squared()*.1
 	
 	func get_sliding_friction(velocity : Vector3, facing_direction : Vector3):
 		if raised: return Vector3.ZERO
-		var parallel_velocity = skate_object.transform.basis.z * velocity.dot(skate_object.transform.basis.z)
+		var parallel_velocity = facing_direction * velocity.dot(facing_direction)
 		var perpendicular_velocity = velocity-parallel_velocity
-		return -perpendicular_velocity.normalized()*perpendicular_velocity.length_squared()*50
+		return perpendicular_velocity.normalized()*perpendicular_velocity.length_squared()*50
 	
 	func raise(amount = .2):
 		skate_object.position.y += amount
@@ -147,7 +147,7 @@ func _physics_process(delta):
 	
 	var offsets = move_and_get_offset()
 	for skate in offsets:
-		offsets[skate] = (offsets[skate] as Vector3).rotated(Vector3.UP,rotation.y)
+		offsets[skate] = -(offsets[skate] as Vector3).rotated(Vector3.UP,rotation.y)
 
 	
 	var global_velocity = velocity.rotated(Vector3.UP, rotation.y+PI)
@@ -183,7 +183,7 @@ func apply_angular_motion(friction : Dictionary, delta : float):
 	for skate in skates:
 		var r = skate.skate_object.position
 		var skate_torque = r.cross(friction[skate])
-		torque -= skate_torque
+		torque += skate_torque
 
 	var angular_acceleration = torque.dot(Vector3.UP)/moment/10
 	
@@ -192,7 +192,11 @@ func apply_angular_motion(friction : Dictionary, delta : float):
 
 func apply_linear_motion(friction : Dictionary, delta : float):
 	var drag_forces : Vector3 = (friction[right_skate] as Vector3) + (friction[left_skate] as Vector3)
-	var acceleration : Vector3 = drag_forces/self.mass
+	var air_drag : Vector3 = -velocity.normalized()*velocity.length_squared()*.50
+	var gravity = Vector3.DOWN*10.0
+	var total_force = drag_forces + air_drag + gravity
+	var acceleration : Vector3 = total_force/self.mass
+	acceleration = clamp_magnitude(acceleration,1000)
 	velocity += acceleration*delta
 	move_and_slide()
 
