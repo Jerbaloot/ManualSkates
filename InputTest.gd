@@ -13,9 +13,20 @@ func _process(delta):
 		skater.left_skate:$LeftRayCast3D,
 		skater.right_skate:$RightRayCast3D
 	}
+	
+	var facing_raycasts = {
+		skater.left_skate:$LeftRayCast3D2,
+		skater.right_skate:$RightRayCast3D2
+	}
 
 	for skate in skater.skate_forces:
 		var force : Vector3 = skater.skate_forces[skate]
 		var raycast = raycasts[skate]
 		raycast.position = (skate as Skater.Skate).skate_object.global_position
 		raycast.target_position = force*delta
+	
+	for skate in skater.facing_directions:
+		var facing_direction : Vector3 = skater.facing_directions[skate]
+		var raycast = facing_raycasts[skate]
+		raycast.position = (skate as Skater.Skate).skate_object.global_position
+		raycast.target_position = facing_direction*10

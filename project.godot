@@ -17,4 +17,5 @@ config/icon="res://icon.svg"
 
 [physics]
 
+common/physics_ticks_per_second=200
 common/max_physics_steps_per_frame=20
