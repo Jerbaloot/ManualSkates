@@ -18,8 +18,8 @@ Rotate Skates: Shoulder Bumpers
 ## Project Description
 I like to rollerblade when I get the chance! I had the thought to make a skating sim like those awkward walking sims where you manually control your legs. I initially planned to use two mice instead of a controller. But, there are a couple of problems with that approach:
 
-	1. Mice only sense translational motion, they don't "see" your rotation of the mouse.
-	2. Your computer registers only 1 cursor at a time, and I couldn't find any workaround for that. You *could* try to manually read the inputs of the mouse data at the usb port, but I did not want to go down that road.
+ 1. Mice only sense translational motion, they don't "see" your rotation of the mouse.
+ 2. Your computer registers only 1 cursor at a time, and I couldn't find any workaround for that. You *could* try to manually read the inputs of the mouse data at the usb port, but I did not want to go down that road.
 
 
 
